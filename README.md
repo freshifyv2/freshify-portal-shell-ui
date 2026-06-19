@@ -53,4 +53,10 @@ export default async function Page() {
 
 ## License
 
-Apache-2.0 © Freshify, Inc.
+Apache 2.0. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE). Copyright 2026 Freshify, Inc.
+
+## Support
+
+- Bugs and feature requests: open an issue. Read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
+- Security disclosures: see [SECURITY.md](./SECURITY.md). Do not open a public issue.
+- Production deployment, custom modules, architecture review: see [SUPPORT.md](./SUPPORT.md).
