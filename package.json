@@ -1,9 +1,20 @@
 {
   "name": "@freshifyv2/portal-shell-ui",
   "version": "0.1.0",
-  "description": "Sovereign Portal shell — Chrome, sidebar, topbar, footer, and shared CSS. Consumed by portal-shell, users-fe, companies-fe, workspaces-fe.",
+  "description": "Sovereign Portal shell \u2014 Chrome, sidebar, topbar, footer, and shared CSS. Consumed by portal-shell, users-fe, companies-fe, workspaces-fe.",
   "license": "Apache-2.0",
-  "private": true,
+  "author": "Freshify, Inc. (https://freshify.io)",
+  "homepage": "https://github.com/freshifyv2/freshify-portal-shell-ui#readme",
+  "bugs": {
+    "url": "https://github.com/freshifyv2/freshify-portal-shell-ui/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/freshifyv2/freshify-portal-shell-ui.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
