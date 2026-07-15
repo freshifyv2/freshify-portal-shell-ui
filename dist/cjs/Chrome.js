@@ -11,6 +11,7 @@ const NAV_ITEMS = [
     { key: "workspaces", label: "Workspaces", href: "/dashboard/workspaces", icon: "◧" },
     { key: "users", label: "Users", href: "/dashboard/users/list", icon: "◐", operatorOnly: true },
     { key: "portal-settings", label: "Portal Settings", href: "/dashboard/portal-settings", icon: "⚙", operatorOnly: true, groupStart: "System" },
+    { key: "module-settings", label: "Module Settings", href: "/dashboard/module-settings", icon: "▤", operatorOnly: true },
     { key: "audit", label: "Audit feed", href: "/dashboard/audit", icon: "≡", operatorOnly: true },
     { key: "invites", label: "Invites", href: "/dashboard/invites", icon: "✉", operatorOnly: true },
     // Service modules — guide-only
@@ -39,10 +40,17 @@ function TenantSwitcher({ isOperator, activeCompany, tenantOptions, }) {
     // Operator: pure-CSS <details> dropdown
     return ((0, jsx_runtime_1.jsxs)("details", { className: "tenant-switcher-details", children: [(0, jsx_runtime_1.jsxs)("summary", { className: "tenant-switcher", children: [(0, jsx_runtime_1.jsxs)("div", { className: "label", children: [(0, jsx_runtime_1.jsx)("span", { className: "hint", children: hintLabel }), (0, jsx_runtime_1.jsx)("span", { children: summaryLabel })] }), (0, jsx_runtime_1.jsx)("span", { className: "chev", children: "\u25BE" })] }), (0, jsx_runtime_1.jsxs)("div", { className: "overlay", role: "menu", style: { marginTop: 6 }, children: [(0, jsx_runtime_1.jsx)("div", { className: "section-label", children: "Operator scope" }), (0, jsx_runtime_1.jsx)("form", { action: "/api/admin/active-tenant", method: "post", style: { margin: 0 }, children: (0, jsx_runtime_1.jsxs)("button", { type: "submit", name: "companyId", value: "", className: `row ${!activeCompany?.companyId ? "active" : ""}`, style: { width: "100%", border: "none", background: "transparent", textAlign: "left", padding: "8px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }, children: [(0, jsx_runtime_1.jsx)("span", { className: "dot", "aria-hidden": true }), (0, jsx_runtime_1.jsx)("div", { className: "body", children: (0, jsx_runtime_1.jsx)("div", { className: "title", children: "All Companies" }) }), (0, jsx_runtime_1.jsx)("span", { className: "right", children: "Aggregate" })] }) }), (0, jsx_runtime_1.jsx)("div", { className: "sep-line" }), (0, jsx_runtime_1.jsx)("div", { className: "section-label", children: "Impersonate" }), tenantOptions.length === 0 ? ((0, jsx_runtime_1.jsx)("div", { className: "row", style: { color: "var(--fg-subtle)" }, children: "No tenants available" })) : (tenantOptions.map((t) => ((0, jsx_runtime_1.jsx)("form", { action: "/api/admin/active-tenant", method: "post", style: { margin: 0 }, children: (0, jsx_runtime_1.jsxs)("button", { type: "submit", name: "companyId", value: t.companyId, className: `row ${activeCompany?.companyId === t.companyId ? "active" : ""}`, style: { width: "100%", border: "none", background: "transparent", textAlign: "left", padding: "8px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }, children: [(0, jsx_runtime_1.jsx)("span", { className: "dot", "aria-hidden": true }), (0, jsx_runtime_1.jsx)("div", { className: "body", children: (0, jsx_runtime_1.jsx)("div", { className: "title", children: t.name }) })] }) }, t.companyId))))] })] }));
 }
-function Chrome({ active, pageTitle, user, activeCompany, tenantOptions = [], portalWide = false, children, }) {
+function Chrome({ active, pageTitle, user, activeCompany, tenantOptions = [], portalWide = false, visibleModuleKeys, children, }) {
     const isOperator = Boolean(user.isOperator);
     const isImpersonating = isOperator && Boolean(activeCompany?.companyId);
-    const visibleNav = NAV_ITEMS.filter((it) => !it.operatorOnly || isOperator);
+    const allowedSet = visibleModuleKeys ? new Set(visibleModuleKeys) : null;
+    const visibleNav = NAV_ITEMS.filter((it) => {
+        if (it.operatorOnly && !isOperator)
+            return false;
+        if (allowedSet && it.key !== null && !allowedSet.has(it.key))
+            return false;
+        return true;
+    });
     const displayName = user.displayName ?? "Signed in";
     const roleLabel = isImpersonating
         ? `Operator · ${activeCompany?.name ?? ""}`

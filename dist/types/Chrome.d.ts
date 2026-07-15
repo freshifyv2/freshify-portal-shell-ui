@@ -16,7 +16,7 @@
  * stable so existing dashboard pages compile unchanged.
  */
 import type { ReactNode } from "react";
-export type ActiveSection = "dashboard" | "companies" | "workspaces" | "users" | "account" | "portal-settings" | "audit" | "invites" | "projects" | "tasks" | "reports" | null;
+export type ActiveSection = "dashboard" | "companies" | "workspaces" | "users" | "account" | "portal-settings" | "module-settings" | "audit" | "invites" | "projects" | "tasks" | "reports" | null;
 export interface TenantOption {
     companyId: string;
     name: string;
@@ -43,6 +43,12 @@ export interface ChromeProps {
      * Audit feed, Invites, cross-tenant Users directory.
      */
     portalWide?: boolean;
+    /**
+     * Deploy 5.20 — module assignment filter. When supplied, only NAV_ITEMS
+     * whose key appears in this list are rendered (operatorOnly still applies
+     * as a hard prerequisite). When undefined, falls back to legacy behavior.
+     */
+    visibleModuleKeys?: string[];
     children: ReactNode;
 }
-export declare function Chrome({ active, pageTitle, user, activeCompany, tenantOptions, portalWide, children, }: ChromeProps): import("react").JSX.Element;
+export declare function Chrome({ active, pageTitle, user, activeCompany, tenantOptions, portalWide, visibleModuleKeys, children, }: ChromeProps): import("react").JSX.Element;

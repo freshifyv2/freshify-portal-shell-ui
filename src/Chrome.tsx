@@ -25,6 +25,7 @@ export type ActiveSection =
   | "users"
   | "account"
   | "portal-settings"
+  | "module-settings"
   | "audit"
   | "invites"
   | "projects"
@@ -56,6 +57,12 @@ export interface ChromeProps {
    * Audit feed, Invites, cross-tenant Users directory.
    */
   portalWide?: boolean;
+  /**
+   * Deploy 5.20 — module assignment filter. When supplied, only NAV_ITEMS
+   * whose key appears in this list are rendered (operatorOnly still applies
+   * as a hard prerequisite). When undefined, falls back to legacy behavior.
+   */
+  visibleModuleKeys?: string[];
   children: ReactNode;
 }
 
@@ -83,6 +90,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: "workspaces", label: "Workspaces", href: "/dashboard/workspaces", icon: "◧" },
   { key: "users", label: "Users", href: "/dashboard/users/list", icon: "◐", operatorOnly: true },
   { key: "portal-settings", label: "Portal Settings", href: "/dashboard/portal-settings", icon: "⚙", operatorOnly: true, groupStart: "System" },
+  { key: "module-settings", label: "Module Settings", href: "/dashboard/module-settings", icon: "▤", operatorOnly: true },
   { key: "audit", label: "Audit feed", href: "/dashboard/audit", icon: "≡", operatorOnly: true },
   { key: "invites", label: "Invites", href: "/dashboard/invites", icon: "✉", operatorOnly: true },
   // Service modules — guide-only
@@ -187,11 +195,17 @@ export function Chrome({
   activeCompany,
   tenantOptions = [],
   portalWide = false,
+  visibleModuleKeys,
   children,
 }: ChromeProps) {
   const isOperator = Boolean(user.isOperator);
   const isImpersonating = isOperator && Boolean(activeCompany?.companyId);
-  const visibleNav = NAV_ITEMS.filter((it) => !it.operatorOnly || isOperator);
+  const allowedSet = visibleModuleKeys ? new Set(visibleModuleKeys) : null;
+  const visibleNav = NAV_ITEMS.filter((it) => {
+    if (it.operatorOnly && !isOperator) return false;
+    if (allowedSet && it.key !== null && !allowedSet.has(it.key)) return false;
+    return true;
+  });
   const displayName = user.displayName ?? "Signed in";
   const roleLabel = isImpersonating
     ? `Operator · ${activeCompany?.name ?? ""}`

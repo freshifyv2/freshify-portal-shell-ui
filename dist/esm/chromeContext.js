@@ -15,6 +15,8 @@ import { readSessionToken } from "./session";
 import { decodeJwt } from "./jwt";
 const COMPANIES_URL = process.env.COMPANIES_SERVICE_URL ||
     "https://freshify-companies-sbzaekoo4q-uc.a.run.app";
+const USERS_URL = process.env.USERS_SERVICE_URL ||
+    "https://freshify-users-sbzaekoo4q-uc.a.run.app";
 export async function loadChromeContext() {
     const token = readSessionToken();
     if (!token)
@@ -69,6 +71,25 @@ export async function loadChromeContext() {
         }
         tenantOptions = [];
     }
+    // Deploy 5.20 — fetch visible modules for the current scope. Fail-soft: on
+    // error we return an empty list; Chrome falls back to the legacy filter
+    // (operatorOnly only) when visibleModuleKeys is undefined, so we intentionally
+    // pass through empty array only when we got a real response.
+    let visibleModuleKeys = [];
+    try {
+        const scopeParam = scopedCompanyId ? encodeURIComponent(scopedCompanyId) : "all";
+        const res = await fetch(`${USERS_URL}/v1/portal-modules?scope=${scopeParam}`, {
+            headers: { authorization: `Bearer ${token}` },
+            cache: "no-store",
+        });
+        if (res.ok) {
+            const body = (await res.json());
+            visibleModuleKeys = (body.modules ?? []).map((m) => m.moduleId);
+        }
+    }
+    catch {
+        visibleModuleKeys = [];
+    }
     const displayName = claims.displayName || claims.email || "there";
     const handle = (() => {
         const e = claims.email;
@@ -93,5 +114,6 @@ export async function loadChromeContext() {
         activeCompany,
         tenantOptions,
         effectiveCompanyId,
+        visibleModuleKeys,
     };
 }
