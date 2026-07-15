@@ -22,10 +22,6 @@ const COMPANIES_URL =
   process.env.COMPANIES_SERVICE_URL ||
   "https://freshify-companies-sbzaekoo4q-uc.a.run.app";
 
-const USERS_URL =
-  process.env.USERS_SERVICE_URL ||
-  "https://freshify-users-sbzaekoo4q-uc.a.run.app";
-
 export interface ChromeContext {
   token: string | null;
   user: {
@@ -38,13 +34,6 @@ export interface ChromeContext {
   tenantOptions: TenantOption[];
   /** Effective scope to filter list/detail queries by. null = all (operator mode). */
   effectiveCompanyId: string | null;
-  /**
-   * Deploy 5.20 — the moduleIds the caller can see in the nav given their
-   * current scope. Pass as `visibleModuleKeys` to Chrome to filter the
-   * sidebar. Empty array is treated as "no modules assigned" (dashboard
-   * still renders via the Chrome floor).
-   */
-  visibleModuleKeys: string[];
 }
 
 export async function loadChromeContext(): Promise<ChromeContext | null> {
@@ -101,25 +90,6 @@ export async function loadChromeContext(): Promise<ChromeContext | null> {
     tenantOptions = [];
   }
 
-  // Deploy 5.20 — fetch visible modules for the current scope. Fail-soft: on
-  // error we return an empty list; Chrome falls back to the legacy filter
-  // (operatorOnly only) when visibleModuleKeys is undefined, so we intentionally
-  // pass through empty array only when we got a real response.
-  let visibleModuleKeys: string[] = [];
-  try {
-    const scopeParam = scopedCompanyId ? encodeURIComponent(scopedCompanyId) : "all";
-    const res = await fetch(`${USERS_URL}/v1/portal-modules?scope=${scopeParam}`, {
-      headers: { authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const body = (await res.json()) as { modules?: Array<{ moduleId: string }> };
-      visibleModuleKeys = (body.modules ?? []).map((m) => m.moduleId);
-    }
-  } catch {
-    visibleModuleKeys = [];
-  }
-
   const displayName = claims.displayName || claims.email || "there";
   const handle = ((): string => {
     const e = claims.email;
@@ -142,6 +112,5 @@ export async function loadChromeContext(): Promise<ChromeContext | null> {
     activeCompany,
     tenantOptions,
     effectiveCompanyId,
-    visibleModuleKeys,
   };
 }
