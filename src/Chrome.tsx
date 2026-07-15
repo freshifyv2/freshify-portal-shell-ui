@@ -180,6 +180,7 @@ export function Chrome({
   user,
   activeCompany,
   tenantOptions = [],
+  portalWide = false,
   children,
 }: ChromeProps) {
   const isOperator = Boolean(user.isOperator);
@@ -211,11 +212,20 @@ export function Chrome({
           <div>Sovereign Portal</div>
         </div>
 
-        <TenantSwitcher
-          isOperator={isOperator}
-          activeCompany={activeCompany}
-          tenantOptions={tenantOptions}
-        />
+        {portalWide ? (
+          <div className="tenant-switcher" aria-disabled="true" title="This module is portal-wide and not scoped to a tenant">
+            <div className="label">
+              <span className="hint">Scope</span>
+              <span>Portal-wide</span>
+            </div>
+          </div>
+        ) : (
+          <TenantSwitcher
+            isOperator={isOperator}
+            activeCompany={activeCompany}
+            tenantOptions={tenantOptions}
+          />
+        )}
 
         {groups.map((grp, gi) => (
           <span key={`${grp.label}-${gi}`} style={{ display: "contents" }}>
