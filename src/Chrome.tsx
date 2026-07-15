@@ -50,6 +50,12 @@ export interface ChromeProps {
   activeCompany?: { companyId?: string; name: string } | null;
   /** Operator-only: list of all customer companies they can switch into. Non-operators receive [] and the switcher renders disabled. */
   tenantOptions?: TenantOption[];
+  /**
+   * When true, replaces the tenant switcher with a static "Portal-wide" chip.
+   * Set on pages that are not scoped to a tenant — e.g. Portal Settings,
+   * Audit feed, Invites, cross-tenant Users directory.
+   */
+  portalWide?: boolean;
   children: ReactNode;
 }
 
