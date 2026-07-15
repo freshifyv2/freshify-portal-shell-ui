@@ -22,6 +22,10 @@ const COMPANIES_URL =
   process.env.COMPANIES_SERVICE_URL ||
   "https://freshify-companies-sbzaekoo4q-uc.a.run.app";
 
+const USERS_URL =
+  process.env.USERS_SERVICE_URL ||
+  "https://freshify-users-sbzaekoo4q-uc.a.run.app";
+
 export interface ChromeContext {
   token: string | null;
   user: {
@@ -34,6 +38,12 @@ export interface ChromeContext {
   tenantOptions: TenantOption[];
   /** Effective scope to filter list/detail queries by. null = all (operator mode). */
   effectiveCompanyId: string | null;
+  /**
+   * The Company that owns the portal itself (from portal_settings.governance).
+   * Used by Chrome to hide portal-owner-only nav items from other tenants.
+   * Null = not yet configured.
+   */
+  portalOwnerCompanyId: string | null;
 }
 
 export async function loadChromeContext(): Promise<ChromeContext | null> {
@@ -90,6 +100,23 @@ export async function loadChromeContext(): Promise<ChromeContext | null> {
     tenantOptions = [];
   }
 
+  // Portal governance — lightweight, non-operator-gated. Fail-soft to null so
+  // Chrome falls back to the pre-governance behaviour (show every module to
+  // every operator) if users-be is unreachable.
+  let portalOwnerCompanyId: string | null = null;
+  try {
+    const gRes = await fetch(`${USERS_URL}/v1/portal-governance`, {
+      headers: { authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (gRes.ok) {
+      const body = (await gRes.json()) as { portalOwnerCompanyId?: string | null };
+      portalOwnerCompanyId = body.portalOwnerCompanyId ?? null;
+    }
+  } catch {
+    portalOwnerCompanyId = null;
+  }
+
   const displayName = claims.displayName || claims.email || "there";
   const handle = ((): string => {
     const e = claims.email;
@@ -112,5 +139,6 @@ export async function loadChromeContext(): Promise<ChromeContext | null> {
     activeCompany,
     tenantOptions,
     effectiveCompanyId,
+    portalOwnerCompanyId,
   };
 }

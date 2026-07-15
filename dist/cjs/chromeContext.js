@@ -18,6 +18,8 @@ const session_1 = require("./session");
 const jwt_1 = require("./jwt");
 const COMPANIES_URL = process.env.COMPANIES_SERVICE_URL ||
     "https://freshify-companies-sbzaekoo4q-uc.a.run.app";
+const USERS_URL = process.env.USERS_SERVICE_URL ||
+    "https://freshify-users-sbzaekoo4q-uc.a.run.app";
 async function loadChromeContext() {
     const token = (0, session_1.readSessionToken)();
     if (!token)
@@ -72,6 +74,23 @@ async function loadChromeContext() {
         }
         tenantOptions = [];
     }
+    // Portal governance — lightweight, non-operator-gated. Fail-soft to null so
+    // Chrome falls back to the pre-governance behaviour (show every module to
+    // every operator) if users-be is unreachable.
+    let portalOwnerCompanyId = null;
+    try {
+        const gRes = await fetch(`${USERS_URL}/v1/portal-governance`, {
+            headers: { authorization: `Bearer ${token}` },
+            cache: "no-store",
+        });
+        if (gRes.ok) {
+            const body = (await gRes.json());
+            portalOwnerCompanyId = body.portalOwnerCompanyId ?? null;
+        }
+    }
+    catch {
+        portalOwnerCompanyId = null;
+    }
     const displayName = claims.displayName || claims.email || "there";
     const handle = (() => {
         const e = claims.email;
@@ -96,5 +115,6 @@ async function loadChromeContext() {
         activeCompany,
         tenantOptions,
         effectiveCompanyId,
+        portalOwnerCompanyId,
     };
 }

@@ -43,6 +43,13 @@ export interface ChromeProps {
      * Audit feed, Invites, cross-tenant Users directory.
      */
     portalWide?: boolean;
+    /**
+     * The Company that owns the portal itself. Used to hide portal-owner-only
+     * modules from any other tenant's scope. Null = not configured yet, in
+     * which case portal-owner-only modules are shown to every operator (initial
+     * bootstrap only).
+     */
+    portalOwnerCompanyId?: string | null;
     children: ReactNode;
 }
-export declare function Chrome({ active, pageTitle, user, activeCompany, tenantOptions, portalWide, children, }: ChromeProps): import("react").JSX.Element;
+export declare function Chrome({ active, pageTitle, user, activeCompany, tenantOptions, portalWide, portalOwnerCompanyId, children, }: ChromeProps): import("react").JSX.Element;

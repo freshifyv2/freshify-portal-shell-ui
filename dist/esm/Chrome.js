@@ -7,7 +7,7 @@ const NAV_ITEMS = [
     { key: "companies", label: "Customers", href: "/dashboard/companies", icon: "◉" },
     { key: "workspaces", label: "Workspaces", href: "/dashboard/workspaces", icon: "◧" },
     { key: "users", label: "Users", href: "/dashboard/users/list", icon: "◐", operatorOnly: true },
-    { key: "portal-settings", label: "Portal Settings", href: "/dashboard/portal-settings", icon: "⚙", operatorOnly: true, groupStart: "System" },
+    { key: "portal-settings", label: "Portal Settings", href: "/dashboard/portal-settings", icon: "⚙", operatorOnly: true, portalOwnerOnly: true, groupStart: "System" },
     { key: "audit", label: "Audit feed", href: "/dashboard/audit", icon: "≡", operatorOnly: true },
     { key: "invites", label: "Invites", href: "/dashboard/invites", icon: "✉", operatorOnly: true },
     // Service modules — guide-only
@@ -36,10 +36,24 @@ function TenantSwitcher({ isOperator, activeCompany, tenantOptions, }) {
     // Operator: pure-CSS <details> dropdown
     return (_jsxs("details", { className: "tenant-switcher-details", children: [_jsxs("summary", { className: "tenant-switcher", children: [_jsxs("div", { className: "label", children: [_jsx("span", { className: "hint", children: hintLabel }), _jsx("span", { children: summaryLabel })] }), _jsx("span", { className: "chev", children: "\u25BE" })] }), _jsxs("div", { className: "overlay", role: "menu", style: { marginTop: 6 }, children: [_jsx("div", { className: "section-label", children: "Operator scope" }), _jsx("form", { action: "/api/admin/active-tenant", method: "post", style: { margin: 0 }, children: _jsxs("button", { type: "submit", name: "companyId", value: "", className: `row ${!activeCompany?.companyId ? "active" : ""}`, style: { width: "100%", border: "none", background: "transparent", textAlign: "left", padding: "8px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }, children: [_jsx("span", { className: "dot", "aria-hidden": true }), _jsx("div", { className: "body", children: _jsx("div", { className: "title", children: "All Companies" }) }), _jsx("span", { className: "right", children: "Aggregate" })] }) }), _jsx("div", { className: "sep-line" }), _jsx("div", { className: "section-label", children: "Impersonate" }), tenantOptions.length === 0 ? (_jsx("div", { className: "row", style: { color: "var(--fg-subtle)" }, children: "No tenants available" })) : (tenantOptions.map((t) => (_jsx("form", { action: "/api/admin/active-tenant", method: "post", style: { margin: 0 }, children: _jsxs("button", { type: "submit", name: "companyId", value: t.companyId, className: `row ${activeCompany?.companyId === t.companyId ? "active" : ""}`, style: { width: "100%", border: "none", background: "transparent", textAlign: "left", padding: "8px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }, children: [_jsx("span", { className: "dot", "aria-hidden": true }), _jsx("div", { className: "body", children: _jsx("div", { className: "title", children: t.name }) })] }) }, t.companyId))))] })] }));
 }
-export function Chrome({ active, pageTitle, user, activeCompany, tenantOptions = [], portalWide = false, children, }) {
+export function Chrome({ active, pageTitle, user, activeCompany, tenantOptions = [], portalWide = false, portalOwnerCompanyId = null, children, }) {
     const isOperator = Boolean(user.isOperator);
     const isImpersonating = isOperator && Boolean(activeCompany?.companyId);
-    const visibleNav = NAV_ITEMS.filter((it) => !it.operatorOnly || isOperator);
+    const activeCompanyId = activeCompany?.companyId ?? null;
+    // portalOwnerOnly filter: if portalOwnerCompanyId is configured AND the
+    // active scope is a specific tenant that isn't the portal-owning Company,
+    // hide portal-owner-only items. Aggregate scope (no activeCompanyId) still
+    // shows them so operators can find them from "All Companies".
+    const hidePortalOwnerOnly = Boolean(portalOwnerCompanyId) &&
+        Boolean(activeCompanyId) &&
+        activeCompanyId !== portalOwnerCompanyId;
+    const visibleNav = NAV_ITEMS.filter((it) => {
+        if (it.operatorOnly && !isOperator)
+            return false;
+        if (it.portalOwnerOnly && hidePortalOwnerOnly)
+            return false;
+        return true;
+    });
     const displayName = user.displayName ?? "Signed in";
     const roleLabel = isImpersonating
         ? `Operator · ${activeCompany?.name ?? ""}`

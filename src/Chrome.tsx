@@ -56,6 +56,13 @@ export interface ChromeProps {
    * Audit feed, Invites, cross-tenant Users directory.
    */
   portalWide?: boolean;
+  /**
+   * The Company that owns the portal itself. Used to hide portal-owner-only
+   * modules from any other tenant's scope. Null = not configured yet, in
+   * which case portal-owner-only modules are shown to every operator (initial
+   * bootstrap only).
+   */
+  portalOwnerCompanyId?: string | null;
   children: ReactNode;
 }
 
@@ -65,6 +72,13 @@ interface NavItem {
   href: string;
   /** If true, only renders when user.isOperator */
   operatorOnly?: boolean;
+  /**
+   * If true, only renders when the active scope is the portal-owning Company
+   * (or aggregate/operator scope with no active tenant). Hidden from any
+   * other tenant's scope. Requires portalOwnerCompanyId to be configured; if
+   * unset, this flag has no effect (initial-bootstrap behaviour).
+   */
+  portalOwnerOnly?: boolean;
   /** Renders a section label above this nav item */
   groupStart?: string;
   /** True = guide-only module (Projects/Tasks/Reports) */
@@ -82,7 +96,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: "companies", label: "Customers", href: "/dashboard/companies", icon: "◉" },
   { key: "workspaces", label: "Workspaces", href: "/dashboard/workspaces", icon: "◧" },
   { key: "users", label: "Users", href: "/dashboard/users/list", icon: "◐", operatorOnly: true },
-  { key: "portal-settings", label: "Portal Settings", href: "/dashboard/portal-settings", icon: "⚙", operatorOnly: true, groupStart: "System" },
+  { key: "portal-settings", label: "Portal Settings", href: "/dashboard/portal-settings", icon: "⚙", operatorOnly: true, portalOwnerOnly: true, groupStart: "System" },
   { key: "audit", label: "Audit feed", href: "/dashboard/audit", icon: "≡", operatorOnly: true },
   { key: "invites", label: "Invites", href: "/dashboard/invites", icon: "✉", operatorOnly: true },
   // Service modules — guide-only
@@ -187,11 +201,25 @@ export function Chrome({
   activeCompany,
   tenantOptions = [],
   portalWide = false,
+  portalOwnerCompanyId = null,
   children,
 }: ChromeProps) {
   const isOperator = Boolean(user.isOperator);
   const isImpersonating = isOperator && Boolean(activeCompany?.companyId);
-  const visibleNav = NAV_ITEMS.filter((it) => !it.operatorOnly || isOperator);
+  const activeCompanyId = activeCompany?.companyId ?? null;
+  // portalOwnerOnly filter: if portalOwnerCompanyId is configured AND the
+  // active scope is a specific tenant that isn't the portal-owning Company,
+  // hide portal-owner-only items. Aggregate scope (no activeCompanyId) still
+  // shows them so operators can find them from "All Companies".
+  const hidePortalOwnerOnly =
+    Boolean(portalOwnerCompanyId) &&
+    Boolean(activeCompanyId) &&
+    activeCompanyId !== portalOwnerCompanyId;
+  const visibleNav = NAV_ITEMS.filter((it) => {
+    if (it.operatorOnly && !isOperator) return false;
+    if (it.portalOwnerOnly && hidePortalOwnerOnly) return false;
+    return true;
+  });
   const displayName = user.displayName ?? "Signed in";
   const roleLabel = isImpersonating
     ? `Operator · ${activeCompany?.name ?? ""}`

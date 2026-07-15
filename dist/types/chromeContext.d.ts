@@ -28,5 +28,11 @@ export interface ChromeContext {
     tenantOptions: TenantOption[];
     /** Effective scope to filter list/detail queries by. null = all (operator mode). */
     effectiveCompanyId: string | null;
+    /**
+     * The Company that owns the portal itself (from portal_settings.governance).
+     * Used by Chrome to hide portal-owner-only nav items from other tenants.
+     * Null = not yet configured.
+     */
+    portalOwnerCompanyId: string | null;
 }
 export declare function loadChromeContext(): Promise<ChromeContext | null>;
