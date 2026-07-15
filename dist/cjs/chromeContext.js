@@ -2,14 +2,15 @@
 /**
  * Shared helper to populate Chrome's tenant-switcher props.
  *
- * For operators, fetches the full company list from companies-be.
- * For non-operators, returns an empty options array — the switcher
- * renders disabled and shows the user's own company.
+ * For operators, fetches the full company list from companies-be so they
+ * can switch into any tenant. For non-operators, returns an empty options
+ * array — the switcher renders disabled and shows the user's own company.
  *
- * The active tenant override comes from the sp_active_tenant cookie
- * (set by /api/admin/active-tenant on the users-fe). If a non-operator
- * has a cookie set (which shouldn't happen — the endpoint rejects them),
- * we still ignore it here as a defensive measure.
+ * Active tenant is derived from the JWT (`claims.companyId`), which is the
+ * sovereign source of truth. The switcher swaps the JWT via
+ * /api/admin/active-tenant → users-be /v1/session/select. There is no
+ * client-only cookie; scope must be in the token so every BE call filters
+ * correctly.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loadChromeContext = loadChromeContext;
@@ -25,13 +26,16 @@ async function loadChromeContext() {
     if (!claims)
         return null;
     const isOperator = Boolean(claims.operator);
-    const activeTenantId = (0, session_1.readActiveTenant)();
+    // Scope is the JWT's companyId. For operators, null = "All Companies"
+    // (aggregate view). For non-operators, it's their permanent tenant.
+    const scopedCompanyId = claims.companyId ?? null;
+    const scopedCompanyName = claims.companyName ?? null;
     let activeCompany = null;
     let tenantOptions = [];
-    let effectiveCompanyId = null;
+    let effectiveCompanyId = scopedCompanyId;
     if (isOperator) {
-        // Try to load the full company list. Fail-soft: if BE is down, render
-        // with no options and let the user retry.
+        // Load the full company list so the switcher can offer any tenant.
+        // Fail-soft: if BE is down, render with no options and let the user retry.
         try {
             const res = await fetch(`${COMPANIES_URL}/v1/companies`, {
                 headers: { authorization: `Bearer ${token}` },
@@ -48,21 +52,23 @@ async function loadChromeContext() {
         catch {
             tenantOptions = [];
         }
-        if (activeTenantId) {
-            const match = tenantOptions.find((c) => c.companyId === activeTenantId);
-            activeCompany = match ? { companyId: match.companyId, name: match.name } : null;
-            effectiveCompanyId = activeTenantId;
+        if (scopedCompanyId) {
+            // Resolve name from the freshly-loaded list first (authoritative),
+            // fall back to the claim value.
+            const match = tenantOptions.find((c) => c.companyId === scopedCompanyId);
+            activeCompany = {
+                companyId: scopedCompanyId,
+                name: match?.name ?? scopedCompanyName ?? scopedCompanyId,
+            };
         }
         else {
             activeCompany = null; // "All Companies"
-            effectiveCompanyId = null;
         }
     }
     else {
-        // Non-operator: locked to own company
-        if (claims.companyId && claims.companyName) {
-            activeCompany = { companyId: claims.companyId, name: claims.companyName };
-            effectiveCompanyId = claims.companyId;
+        // Non-operator: locked to own company (set on login).
+        if (scopedCompanyId && scopedCompanyName) {
+            activeCompany = { companyId: scopedCompanyId, name: scopedCompanyName };
         }
         tenantOptions = [];
     }

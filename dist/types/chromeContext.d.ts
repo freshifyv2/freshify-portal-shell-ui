@@ -1,14 +1,15 @@
 /**
  * Shared helper to populate Chrome's tenant-switcher props.
  *
- * For operators, fetches the full company list from companies-be.
- * For non-operators, returns an empty options array — the switcher
- * renders disabled and shows the user's own company.
+ * For operators, fetches the full company list from companies-be so they
+ * can switch into any tenant. For non-operators, returns an empty options
+ * array — the switcher renders disabled and shows the user's own company.
  *
- * The active tenant override comes from the sp_active_tenant cookie
- * (set by /api/admin/active-tenant on the users-fe). If a non-operator
- * has a cookie set (which shouldn't happen — the endpoint rejects them),
- * we still ignore it here as a defensive measure.
+ * Active tenant is derived from the JWT (`claims.companyId`), which is the
+ * sovereign source of truth. The switcher swaps the JWT via
+ * /api/admin/active-tenant → users-be /v1/session/select. There is no
+ * client-only cookie; scope must be in the token so every BE call filters
+ * correctly.
  */
 import type { TenantOption } from "./Chrome";
 export type { TenantOption };
